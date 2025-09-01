@@ -1,0 +1,161 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Recommender</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #fff8f0, #ffe5d9);
+            color: #333;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            color: #d35400;
+            text-shadow: 1px 1px 0 #fff;
+        }
+
+        input {
+            padding: 10px;
+            width: 250px;
+            margin-right: 10px;
+            border: 2px solid #f39c12;
+            border-radius: 5px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: #e67e22;
+            box-shadow: 0 0 5px rgba(230, 126, 34, 0.5);
+        }
+
+        button {
+            padding: 10px 15px;
+            margin-right: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #e67e22;
+            color: white;
+            font-weight: bold;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background: #d35400;
+            transform: scale(1.05);
+        }
+
+        .card {
+            border: none;
+            background: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #27ae60;
+        }
+
+        .error {
+            border-left: 5px solid red;
+            background: #ffe6e6;
+            color: #c0392b;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>🍲 Recipe Recommender</h2>
+    <input id="ingredients" placeholder="e.g., chicken, tomato" />
+    <button onclick="getRecipes()">Get Recipes</button>
+    <button onclick="loadRecent()">Load Recent</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function getRecipes() {
+            const ingredientsInput = document.getElementById('ingredients').value.trim();
+            const ingredients = ingredientsInput.split(',').map(i => i.trim()).filter(Boolean);
+
+            if (!ingredients.length) {
+                showError('⚠️ Please enter at least one ingredient.');
+                return;
+            }
+
+            try {
+                const res = await fetch('http://localhost:5000/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ingredients })
+                });
+
+                const data = await res.json();
+                console.log("Backend /recommend response:", data);
+
+                if (res.ok && data.recipes && Array.isArray(data.recipes)) {
+                    renderRecipes(data.recipes);
+                } else {
+                    showError(data.error || 'Unknown error occurred');
+                    if (data.raw) console.warn('Model raw output:', data.raw);
+                    if (data.details) console.warn('Error details:', data.details);
+                }
+
+            } catch (err) {
+                console.error("Fetch error:", err);
+                showError('⚠️ Failed to fetch recipes. Check if backend is running.');
+            }
+        }
+
+        async function loadRecent() {
+            try {
+                const res = await fetch('http://localhost:5000/recipes');
+                const data = await res.json();
+                console.log("Backend /recipes response:", data);
+
+                if (res.ok && data.recipes && Array.isArray(data.recipes)) {
+                    renderRecipes(data.recipes);
+                } else {
+                    showError(data.error || 'Failed to load recent recipes');
+                }
+            } catch (err) {
+                console.error("Fetch error:", err);
+                showError('⚠️ Failed to load recent recipes.');
+            }
+        }
+
+        function renderRecipes(recipes) {
+            document.getElementById('results').innerHTML = recipes
+                .map(r => `
+                    <div class="card">
+                        <h3>${r.title}</h3>
+                        <p><strong>Ingredients:</strong> ${Array.isArray(r.ingredients) ? r.ingredients.join(', ') : r.ingredients}</p>
+                        <p><strong>Steps:</strong> ${Array.isArray(r.steps) ? r.steps.join(' ') : r.steps}</p>
+                    </div>
+                `).join('');
+        }
+
+        function showError(msg) {
+            document.getElementById('results').innerHTML =
+                `<div class="card error">${msg}</div>`;
+        }
+    </script>
+</body>
+
+</html>
