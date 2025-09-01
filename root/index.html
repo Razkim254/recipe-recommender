@@ -250,6 +250,7 @@
     <div id="results"></div>
 
     <script>
+        // Point to your live Render backend
         const API_BASE = 'https://recipe-recommender-o9wa.onrender.com';
 
         async function getRecipes() {
@@ -281,7 +282,7 @@
 
             } catch (err) {
                 console.error("Fetch error:", err);
-                showError('⚠️ Failed to fetch recipes. Check if backend is running.');
+                showError('⚠️ Failed to fetch recipes. Please try again later.');
             }
         }
 
